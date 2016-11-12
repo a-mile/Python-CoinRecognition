@@ -2,12 +2,7 @@ import numpy as np
 import cv2
 import os
 
-def nothing(x):
-    pass
-
 cv2.namedWindow('image')
-cv2.createTrackbar('C','image',0,10,nothing)
-cv2.createTrackbar('Opening iterations','image',0,10,nothing)
 
 dir = os.path.dirname(__file__)
 imageNumber = 1
@@ -19,13 +14,13 @@ while(1):
 
     image = cv2.imread(filename)
 
-    blur = cv2.GaussianBlur(image, (15, 15), 0)
+    blur = cv2.GaussianBlur(image, (35, 35), 0)
 
     gray = hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2GRAY)
 
-    thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 15, (cv2.getTrackbarPos('C','image')))
+    thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 5, 1)
     kernel = np.ones((3, 3), np.uint8)
-    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=(cv2.getTrackbarPos('Opening iterations','image')))
+    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=4)
 
     cont_img = thresh.copy()
     _, contours, hierarchy = cv2.findContours(cont_img, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
@@ -34,19 +29,11 @@ while(1):
         area = cv2.contourArea(cnt)
         if area < 2000:
             continue
-        hull = cv2.convexHull(cnt)
-        hullf = cv2.convexHull(cnt, returnPoints=False)
-        defects = cv2.convexityDefects(cnt, hullf)
 
-        for i in range(defects.shape[0]):
-            s, e, f, d = defects[i, 0]
-            start = tuple(cnt[s][0])
-            end = tuple(cnt[e][0])
-            far = tuple(cnt[f][0])
-            cv2.circle(image, far, 5, [0, 0, 255], -1)
-
-        cv2.drawContours(image, [hull], -1, (0, 255, 0), 2)
-        #cv2.drawContours(image, [cnt], 0, (255, 255, 0), 3)
+        rect = cv2.minAreaRect(cnt)
+        box = cv2.boxPoints(rect)
+        box = np.int0(box)
+        cv2.drawContours(image, [box], 0, (0, 0, 255), 2)
 
     if showImage:
         cv2.imshow('image',image)
